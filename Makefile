@@ -4,6 +4,7 @@ GOINSTALL=$(GOCMD) install
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
+GOGEN=$(GOCMD) generate
 
 # App parameters
 GOPI=github.com/djthorpe/gopi
@@ -15,11 +16,14 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 
 all: test build clean
 
-test: 
+test: protobuf
 	$(GOTEST) -v ./...
 
-build: 
+build: protobuf
 	$(GOINSTALL) $(GOFLAGS) ./cmd/...
+
+protobuf:
+	$(GOGEN) -x ./rpc/...
 
 clean: 
 	$(GOCLEAN)
