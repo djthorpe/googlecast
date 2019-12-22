@@ -5,29 +5,29 @@ defaults: &defaults
 
 version: 2
 jobs:
-  setup:
-    <<: *defaults
-    steps: 
-      - run: |
-          sudo apt install protobuf-compiler
-          sudo apt install libprotobuf-dev
-          go get -u github.com/golang/protobuf/protoc-gen-go  
   test:
     <<: *defaults
     steps:
       - checkout
+      - run: |
+          sudo apt install protobuf-compiler
+          sudo apt install libprotobuf-dev
+          go get -u github.com/golang/protobuf/protoc-gen-go  
       - run: make test
   build:
     <<: *defaults
     steps:
       - checkout
+      - run: |
+          sudo apt install protobuf-compiler
+          sudo apt install libprotobuf-dev
+          go get -u github.com/golang/protobuf/protoc-gen-go  
       - run: make build
 
 workflows:
   version: 2
   test_and_build:
     jobs:
-      - setup
       - test
       - build
 
