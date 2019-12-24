@@ -37,6 +37,7 @@ type cast struct {
 	event.Publisher
 	event.Tasks
 	sync.Mutex
+	sync.WaitGroup
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +80,9 @@ func (this *cast) Close() error {
 	for channel := range this.channels {
 		errs.Add(this.Disconnect(channel))
 	}
+
+	// Wait for end of channel watching
+	this.WaitGroup.Wait()
 
 	// Stop background tasks
 	if err := this.Tasks.Close(); err != nil {
@@ -139,6 +143,9 @@ func (this *cast) Connect(device googlecast.Device, flag gopi.RPCFlag, timeout t
 	} else if err := this.addChannel(device_, channel_); err != nil {
 		return nil, err
 	} else {
+		// Watch channel for messages
+		go this.WatchChannelEvents(device, channel_.Subscribe())
+
 		// Return success
 		return channel_, nil
 	}
@@ -202,6 +209,29 @@ FOR_LOOP:
 	return nil
 }
 
+func (this *cast) WatchChannelEvents(device googlecast.Device, evts <-chan gopi.Event) {
+	this.WaitGroup.Add(1)
+FOR_LOOP:
+	for {
+		select {
+		case evt := <-evts:
+			if evt == nil {
+				continue
+			} else if evt_, ok := evt.(*castevent); ok == false {
+				continue
+			} else if evt_.Type() == googlecast.CAST_EVENT_CHANNEL_DISCONNECT {
+				break FOR_LOOP
+			} else {
+				// Append device
+				evt_.device_ = device
+				evt_.source_ = this
+				this.Emit(evt_)
+			}
+		}
+	}
+	this.WaitGroup.Done()
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -211,15 +241,15 @@ func (this *cast) WatchEvent(evt gopi.RPCEvent) error {
 	} else if device := NewDevice(service); device.Id() == "" {
 		return nil
 	} else if evt.Type() == gopi.RPC_EVENT_SERVICE_EXPIRED {
-		this.Emit(&castevent{googlecast.CAST_EVENT_DEVICE_DELETED, this, device})
+		this.Emit(&castevent{googlecast.CAST_EVENT_DEVICE_DELETED, this, device, nil, 0})
 		this.deleteDevice(device)
 	} else if evt.Type() == gopi.RPC_EVENT_SERVICE_ADDED || evt.Type() == gopi.RPC_EVENT_SERVICE_UPDATED {
 		if device_, exists := this.devices[device.Id()]; device_ == nil || exists == false {
 			this.addDevice(device)
-			this.Emit(&castevent{googlecast.CAST_EVENT_DEVICE_ADDED, this, device})
+			this.Emit(&castevent{googlecast.CAST_EVENT_DEVICE_ADDED, this, device, nil, 0})
 		} else if device.Equals(device_) == false {
 			this.addDevice(device)
-			this.Emit(&castevent{googlecast.CAST_EVENT_DEVICE_UPDATED, this, device})
+			this.Emit(&castevent{googlecast.CAST_EVENT_DEVICE_UPDATED, this, device, nil, 0})
 		}
 	}
 	// Success

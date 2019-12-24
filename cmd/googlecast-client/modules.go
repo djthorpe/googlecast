@@ -10,9 +10,6 @@ package main
 
 import (
 	_ "github.com/djthorpe/googlecast/rpc/grpc/googlecast"
-	_ "github.com/djthorpe/googlecast/sys/googlecast"
-	_ "github.com/djthorpe/gopi-rpc/sys/dns-sd"
 	_ "github.com/djthorpe/gopi-rpc/sys/grpc"
-	_ "github.com/djthorpe/gopi-rpc/sys/rpcutil"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )

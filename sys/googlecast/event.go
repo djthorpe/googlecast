@@ -20,9 +20,11 @@ import (
 // TYPES
 
 type castevent struct {
-	type_   googlecast.EventType
-	source_ gopi.Driver
-	device_ googlecast.Device
+	type_    googlecast.EventType
+	source_  gopi.Driver
+	device_  googlecast.Device
+	channel_ googlecast.Channel
+	reqid_   int
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,11 +46,17 @@ func (this *castevent) Device() googlecast.Device {
 	return this.device_
 }
 
+func (this *castevent) Channel() googlecast.Channel {
+	return this.channel_
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *castevent) String() string {
-	if this.device_ != nil {
+	if this.channel_ != nil {
+		return fmt.Sprintf("<%s>{ %v channel=%v device=%v reqid=%v }", this.Name(), this.type_, this.channel_, this.device_, this.reqid_)
+	} else if this.device_ != nil {
 		return fmt.Sprintf("<%s>{ %v device=%v }", this.Name(), this.type_, this.device_)
 	} else {
 		return fmt.Sprintf("<%s>{ %v }", this.Name(), this.type_)

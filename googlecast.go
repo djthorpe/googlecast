@@ -64,12 +64,13 @@ type Device interface {
 type Channel interface {
 	// Address of channel
 	RemoteAddr() string
-	/*
-		// Get Properties
-		Applications() []Application
-		Volume() Volume
-		Media() Media
 
+	// Get Properties
+	Application() Application
+	Volume() Volume
+	Media() Media
+
+	/*
 		// Set Properties
 		SetApplication(Application) error // Application to watch or nil
 		SetPlay(bool) (int, error)        // Play or stop
@@ -101,7 +102,7 @@ type Event interface {
 
 	Type() EventType
 	Device() Device
-	//Channel() Channel
+	Channel() Channel
 }
 
 ////////////////////////////////////////////////////////////////////////////////

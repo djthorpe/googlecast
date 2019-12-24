@@ -30,6 +30,11 @@ type ReceiverStatusResponse struct {
 	} `json:"status"`
 }
 
+type MediaStatusResponse struct {
+	PayloadHeader
+	Status []media `json:"status"`
+}
+
 /*
 type MediaHeader struct {
 	PayloadHeader
@@ -53,10 +58,6 @@ type DeviceUpdatedResponse struct {
 	} `json:"device"`
 }
 
-type MediaStatusResponse struct {
-	PayloadHeader
-	Status []media `json:"status"`
-}
 */
 
 ////////////////////////////////////////////////////////////////////////////////
