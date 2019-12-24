@@ -10,6 +10,8 @@ package googlecast
 
 import (
 	"fmt"
+	"math/rand"
+	"net"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,7 +23,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type device struct {
+type castdevice struct {
 	gopi.RPCServiceRecord
 	sync.Mutex
 	txt_ map[string]string
@@ -30,30 +32,30 @@ type device struct {
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *device) String() string {
+func (this *castdevice) String() string {
 	return fmt.Sprintf("<googlecast.Device>{ id=%v name=%v model=%v service=%v state=%v }", this.Id(), strconv.Quote(this.Name()), strconv.Quote(this.Model()), strconv.Quote(this.Service()), this.State())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
-func (this *device) Id() string {
+func (this *castdevice) Id() string {
 	return this.txt("id")
 }
 
-func (this *device) Name() string {
+func (this *castdevice) Name() string {
 	return this.txt("fn")
 }
 
-func (this *device) Model() string {
+func (this *castdevice) Model() string {
 	return this.txt("md")
 }
 
-func (this *device) Service() string {
+func (this *castdevice) Service() string {
 	return this.txt("rs")
 }
 
-func (this *device) State() uint {
+func (this *castdevice) State() uint {
 	if value := this.txt("st"); value == "" {
 		return 0
 	} else if value_, err := strconv.ParseUint(value, 10, 32); err != nil {
@@ -63,7 +65,7 @@ func (this *device) State() uint {
 	}
 }
 
-func (this *device) Equals(other *device) bool {
+func (this *castdevice) Equals(other *castdevice) bool {
 	if this.Id() != other.Id() {
 		return false
 	}
@@ -85,7 +87,7 @@ func (this *device) Equals(other *device) bool {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *device) txt(key string) string {
+func (this *castdevice) txt(key string) string {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 	if this.txt_ == nil {
@@ -100,5 +102,44 @@ func (this *device) txt(key string) string {
 		return value
 	} else {
 		return ""
+	}
+}
+
+func (this *castdevice) addr(flag gopi.RPCFlag) (net.IP, error) {
+	switch flag & (gopi.RPC_FLAG_INET_V4 | gopi.RPC_FLAG_INET_V6) {
+	case gopi.RPC_FLAG_INET_V4:
+		ip4 := this.RPCServiceRecord.IP4()
+		if len(ip4) == 0 {
+			return nil, gopi.ErrNotFound
+		} else if flag&gopi.RPC_FLAG_SERVICE_ANY != 0 {
+			// Return any
+			index := rand.Intn(len(ip4) - 1)
+			return ip4[index], nil
+		} else {
+			// Return first
+			return ip4[0], nil
+		}
+	case gopi.RPC_FLAG_INET_V6:
+		ip6 := this.RPCServiceRecord.IP6()
+		if len(ip6) == 0 {
+			return nil, gopi.ErrNotFound
+		} else if flag&gopi.RPC_FLAG_SERVICE_ANY != 0 {
+			// Return any
+			index := rand.Intn(len(ip6) - 1)
+			return ip6[index], nil
+		} else {
+			// Return first
+			return ip6[0], nil
+		}
+	case (gopi.RPC_FLAG_INET_V6 | gopi.RPC_FLAG_INET_V4):
+		if addr, err := this.addr(gopi.RPC_FLAG_INET_V4); err == nil {
+			return addr, nil
+		} else if addr, err := this.addr(gopi.RPC_FLAG_INET_V6); err == nil {
+			return addr, nil
+		} else {
+			return nil, gopi.ErrNotFound
+		}
+	default:
+		return nil, gopi.ErrBadParameter
 	}
 }

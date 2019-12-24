@@ -10,6 +10,7 @@ package googlecast
 
 import (
 	"context"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -44,11 +45,12 @@ type Cast interface {
 	gopi.Driver
 	gopi.Publisher
 
+	// Return list of discovered Google Chromecast Devices
 	Devices() []Device
 
 	// Connect to the control channel for a device, with timeout
-	//Connect(Device, gopi.RPCFlag, time.Duration) (Channel, error)
-	//Disconnect(Channel) error
+	Connect(Device, gopi.RPCFlag, time.Duration) (Channel, error)
+	Disconnect(Channel) error
 }
 
 type Device interface {
@@ -62,21 +64,22 @@ type Device interface {
 type Channel interface {
 	// Address of channel
 	RemoteAddr() string
+	/*
+		// Get Properties
+		Applications() []Application
+		Volume() Volume
+		Media() Media
 
-	// Get Properties
-	Applications() []Application
-	Volume() Volume
-	Media() Media
-
-	// Set Properties
-	SetApplication(Application) error // Application to watch or nil
-	SetPlay(bool) (int, error)        // Play or stop
-	SetPause(bool) (int, error)       // Pause or play
-	SetVolume(float32) (int, error)   // Set volume level
-	SetMuted(bool) (int, error)       // Set muted
-	//SetTrackNext() (int, error)
-	//SetTrackPrev() (int, error)
-	//StreamUrl(string)
+		// Set Properties
+		SetApplication(Application) error // Application to watch or nil
+		SetPlay(bool) (int, error)        // Play or stop
+		SetPause(bool) (int, error)       // Pause or play
+		SetVolume(float32) (int, error)   // Set volume level
+		SetMuted(bool) (int, error)       // Set muted
+		//SetTrackNext() (int, error)
+		//SetTrackPrev() (int, error)
+		//StreamUrl(string)
+	*/
 }
 
 type Application interface {

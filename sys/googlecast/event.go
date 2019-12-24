@@ -9,9 +9,9 @@
 package googlecast
 
 import (
-	// Frameworks
 	"fmt"
 
+	// Frameworks
 	googlecast "github.com/djthorpe/googlecast"
 	gopi "github.com/djthorpe/gopi"
 )
@@ -48,5 +48,9 @@ func (this *castevent) Device() googlecast.Device {
 // STRINGIFY
 
 func (this *castevent) String() string {
-	return fmt.Sprintf("<%s>{ %v id=%v }", this.Name(), this.Type(), this.Device().Id())
+	if this.device_ != nil {
+		return fmt.Sprintf("<%s>{ %v device=%v }", this.Name(), this.type_, this.device_)
+	} else {
+		return fmt.Sprintf("<%s>{ %v }", this.Name(), this.type_)
+	}
 }
