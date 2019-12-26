@@ -11,15 +11,35 @@ service GoogleCast {
 
   // Returns list of cast devices
   rpc Devices(google.protobuf.Empty) returns (DevicesReply);
+
+  // Stream Events
+  rpc StreamEvents(google.protobuf.Empty)  returns (stream CastEvent); 
 }
 
-// A google cast device
+// Cast device
 message CastDevice {
   string id = 1;
   string name = 2;
   string model = 3;
   string service = 4;
   uint32 state = 5;
+}
+
+// Cast event
+message CastEvent {
+  enum EventType {
+    NONE = 0;
+    DEVICE_ADDED = 1;
+    DEVICE_UPDATED = 2;
+    DEVICE_DELETED = 3;
+    CHANNEL_CONNECT = 4;
+    CHANNEL_DISCONNECT = 5;
+    VOLUME_UPDATED = 6;
+    APPLICATION_UPDATED = 7;
+    MEDIA_UPDATED = 8;
+  }
+  EventType type = 1;
+  CastDevice device = 2;
 }
 
 message DevicesReply {

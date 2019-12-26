@@ -11,6 +11,7 @@ package googlecast
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	// Frameworks
@@ -86,6 +87,47 @@ func (this *Client) Devices() ([]googlecast.Device, error) {
 		return nil, err
 	} else {
 		return fromProtoDevicesReply(devices), nil
+	}
+}
+
+func (this *Client) StreamEvents(ctx context.Context) error {
+	this.RPCClientConn.Lock()
+	defer this.RPCClientConn.Unlock()
+
+	stream, err := this.GoogleCastClient.StreamEvents(ctx, &empty.Empty{})
+	if err != nil {
+		return err
+	}
+
+	// Errors channel receives errors from recv
+	errors := make(chan error)
+
+	// Receive messages in the background
+	go func() {
+	FOR_LOOP:
+		for {
+			if evt_, err := stream.Recv(); err == io.EOF {
+				break FOR_LOOP
+			} else if err != nil {
+				errors <- err
+				break FOR_LOOP
+			} else if evt := fromProtoEvent(evt_, this.RPCClientConn); evt != nil {
+				this.Emit(evt)
+			}
+		}
+		close(errors)
+	}()
+
+	// Continue until error or io.EOF is returned
+	for {
+		select {
+		case <-ctx.Done():
+			if err := <-errors; err == nil || grpc.IsErrCanceled(err) {
+				return nil
+			} else {
+				return err
+			}
+		}
 	}
 }
 

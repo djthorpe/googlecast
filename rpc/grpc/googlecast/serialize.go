@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	googlecast "github.com/djthorpe/googlecast"
+	"github.com/djthorpe/gopi"
 
 	// Protocol buffers
 	pb "github.com/djthorpe/googlecast/rpc/protobuf/googlecast"
@@ -24,6 +25,11 @@ import (
 
 type castdevice struct {
 	*pb.CastDevice
+}
+
+type castevent struct {
+	*pb.CastEvent
+	gopi.RPCClientConn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +89,33 @@ func (this *castdevice) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// EVENT IMPLEMENTATION
+
+func (this *castevent) Type() googlecast.EventType {
+	if this.CastEvent != nil {
+		return googlecast.EventType(this.CastEvent.GetType())
+	} else {
+		return googlecast.CAST_EVENT_NONE
+	}
+}
+
+func (this *castevent) Source() gopi.Driver {
+	return this.RPCClientConn
+}
+
+func (this *castevent) Name() string {
+	return "CastEvent"
+}
+
+func (this *castevent) Channel() googlecast.Channel {
+	return nil
+}
+
+func (this *castevent) Device() googlecast.Device {
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // FROM PROTO
 
 func fromProtoDevicesReply(pb *pb.DevicesReply) []googlecast.Device {
@@ -96,6 +129,14 @@ func fromProtoDevicesReply(pb *pb.DevicesReply) []googlecast.Device {
 	return devices
 }
 
+func fromProtoEvent(pb *pb.CastEvent, conn gopi.RPCClientConn) googlecast.Event {
+	if pb == nil {
+		return nil
+	} else {
+		return &castevent{pb, conn}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TO PROTO
 
@@ -107,7 +148,16 @@ func toProtoDevicesReply(devices []googlecast.Device) *pb.DevicesReply {
 		Device: make([]*pb.CastDevice, len(devices)),
 	}
 	for i, device := range devices {
-		reply.Device[i] = &pb.CastDevice{
+		reply.Device[i] = toProtoDevice(device)
+	}
+	return reply
+}
+
+func toProtoDevice(device googlecast.Device) *pb.CastDevice {
+	if device == nil {
+		return nil
+	} else {
+		return &pb.CastDevice{
 			Id:      device.Id(),
 			Name:    device.Name(),
 			Model:   device.Model(),
@@ -115,5 +165,14 @@ func toProtoDevicesReply(devices []googlecast.Device) *pb.DevicesReply {
 			State:   uint32(device.State()),
 		}
 	}
-	return reply
+}
+
+func toProtoEvent(evt googlecast.Event) *pb.CastEvent {
+	if evt == nil {
+		return nil
+	}
+	return &pb.CastEvent{
+		Type:   pb.CastEvent_EventType(evt.Type()),
+		Device: toProtoDevice(evt.Device()),
+	}
 }
