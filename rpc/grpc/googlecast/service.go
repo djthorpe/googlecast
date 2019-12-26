@@ -86,3 +86,9 @@ func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
 	this.log.Debug("<grpc.service.googlecast.Ping>{ }")
 	return &empty.Empty{}, nil
 }
+
+
+func (this *service) Devices(context.Context, *empty.Empty) (*pb.DevicesReply, error) {
+	this.log.Debug("<grpc.service.googlecast.Devices>{ }")
+	return &pb.DevicesReply{}, nil
+}

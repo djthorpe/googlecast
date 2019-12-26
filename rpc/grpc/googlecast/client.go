@@ -14,9 +14,10 @@ import (
 	"time"
 
 	// Frameworks
+	googlecast "github.com/djthorpe/googlecast"
 	gopi "github.com/djthorpe/gopi"
-	event "github.com/djthorpe/gopi/util/event"
 	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
+	event "github.com/djthorpe/gopi/util/event"
 
 	// Protocol buffers
 	pb "github.com/djthorpe/googlecast/rpc/protobuf/googlecast"
@@ -38,7 +39,7 @@ type Client struct {
 func NewGoogleCastClient(conn gopi.RPCClientConn) gopi.RPCClient {
 	return &Client{
 		GoogleCastClient: pb.NewGoogleCastClient(conn.(grpc.GRPCClientConn).GRPCConn()),
-		RPCClientConn: conn,
+		RPCClientConn:    conn,
 	}
 }
 
@@ -73,6 +74,18 @@ func (this *Client) Ping() error {
 		return err
 	} else {
 		return nil
+	}
+}
+
+func (this *Client) Devices() ([]googlecast.Device, error) {
+	this.RPCClientConn.Lock()
+	defer this.RPCClientConn.Unlock()
+
+	// Get devices
+	if _, err := this.GoogleCastClient.Devices(this.NewContext(0), &empty.Empty{}); err != nil {
+		return nil, err
+	} else {
+		return nil, nil
 	}
 }
 

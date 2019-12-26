@@ -115,7 +115,7 @@ type Client interface {
 	Ping() error
 
 	// Return devices from the remote service
-	//Devices() ([]Device, error)
+	Devices() ([]Device, error)
 
 	// Stream discovery events
 	//StreamEvents(ctx context.Context) error

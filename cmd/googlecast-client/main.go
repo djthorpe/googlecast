@@ -19,11 +19,13 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 	} else if client_, err := app.ClientPool.NewClientEx("gopi.GoogleCast", services, 0); err != nil {
 		return err
 	} else if client := client_.(googlecast.Client); client == nil {
-
+		return gopi.ErrAppError
 	} else if err := client.Ping(); err != nil {
 		return err
+	} else if devices, err := client.Devices(); err != nil {
+		return err
 	} else {
-		fmt.Println(client)
+		fmt.Println(devices)
 	}
 
 	// Success
