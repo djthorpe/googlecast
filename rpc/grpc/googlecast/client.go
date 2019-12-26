@@ -82,10 +82,10 @@ func (this *Client) Devices() ([]googlecast.Device, error) {
 	defer this.RPCClientConn.Unlock()
 
 	// Get devices
-	if _, err := this.GoogleCastClient.Devices(this.NewContext(0), &empty.Empty{}); err != nil {
+	if devices, err := this.GoogleCastClient.Devices(this.NewContext(0), &empty.Empty{}); err != nil {
 		return nil, err
 	} else {
-		return nil, nil
+		return fromProtoDevicesReply(devices), nil
 	}
 }
 
