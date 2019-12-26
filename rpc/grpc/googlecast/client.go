@@ -15,6 +15,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
+	event "github.com/djthorpe/gopi/util/event"
 	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
 
 	// Protocol buffers
@@ -27,19 +28,23 @@ import (
 
 type Client struct {
 	pb.GoogleCastClient
-	conn gopi.RPCClientConn
+	gopi.RPCClientConn
+	event.Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func NewGoogleCastClient(conn gopi.RPCClientConn) gopi.RPCClient {
-	return &Client{pb.NewGoogleCastClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn}
+	return &Client{
+		GoogleCastClient: pb.NewGoogleCastClient(conn.(grpc.GRPCClientConn).GRPCConn()),
+		RPCClientConn: conn,
+	}
 }
 
 func (this *Client) NewContext(timeout time.Duration) context.Context {
 	if timeout == 0 {
-		timeout = this.conn.Timeout()
+		timeout = this.RPCClientConn.Timeout()
 	}
 	if timeout == 0 {
 		return context.Background()
@@ -53,15 +58,15 @@ func (this *Client) NewContext(timeout time.Duration) context.Context {
 // PROPERTIES
 
 func (this *Client) Conn() gopi.RPCClientConn {
-	return this.conn
+	return this.RPCClientConn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CALLS
 
 func (this *Client) Ping() error {
-	this.conn.Lock()
-	defer this.conn.Unlock()
+	this.RPCClientConn.Lock()
+	defer this.RPCClientConn.Unlock()
 
 	// Perform ping
 	if _, err := this.GoogleCastClient.Ping(this.NewContext(0), &empty.Empty{}); err != nil {
@@ -75,5 +80,5 @@ func (this *Client) Ping() error {
 // STRINGIFY
 
 func (this *Client) String() string {
-	return fmt.Sprintf("<rpc.service.googlecast.Client>{ conn=%v }", this.conn)
+	return fmt.Sprintf("<rpc.service.googlecast.Client>{ conn=%v }", this.RPCClientConn)
 }
