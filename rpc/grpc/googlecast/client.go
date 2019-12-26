@@ -26,15 +26,15 @@ import (
 // TYPES
 
 type Client struct {
-	pb.GooglecastClient
+	pb.GoogleCastClient
 	conn gopi.RPCClientConn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
-func NewGooglecastClient(conn gopi.RPCClientConn) gopi.RPCClient {
-	return &Client{pb.NewGooglecastClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn}
+func NewGoogleCastClient(conn gopi.RPCClientConn) gopi.RPCClient {
+	return &Client{pb.NewGoogleCastClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn}
 }
 
 func (this *Client) NewContext(timeout time.Duration) context.Context {
@@ -64,7 +64,7 @@ func (this *Client) Ping() error {
 	defer this.conn.Unlock()
 
 	// Perform ping
-	if _, err := this.GooglecastClient.Ping(this.NewContext(0), &empty.Empty{}); err != nil {
+	if _, err := this.GoogleCastClient.Ping(this.NewContext(0), &empty.Empty{}); err != nil {
 		return err
 	} else {
 		return nil

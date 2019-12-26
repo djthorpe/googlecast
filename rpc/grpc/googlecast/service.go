@@ -51,7 +51,7 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 	this.cast = config.Cast
 
 	// Register service with GRPC server
-	pb.RegisterGooglecastServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
+	pb.RegisterGoogleCastServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
 
 	// Success
 	return this, nil

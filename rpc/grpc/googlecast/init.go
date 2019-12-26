@@ -40,7 +40,7 @@ func init() {
 			if clientpool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool); clientpool == nil {
 				return gopi.ErrAppError
 			} else {
-				clientpool.RegisterClient("gopi.Googlecast", NewGooglecastClient)
+				clientpool.RegisterClient("gopi.GoogleCast", NewGoogleCastClient)
 				return nil
 			}
 		},

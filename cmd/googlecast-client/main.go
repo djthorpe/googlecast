@@ -15,7 +15,7 @@ import (
 func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- struct{}) error {
 	if len(services) == 0 {
 		return fmt.Errorf("Service not found")
-	} else if client, err := app.ClientPool.NewClientEx("gopi.Googlecast", services, 0); err != nil {
+	} else if client, err := app.ClientPool.NewClientEx("gopi.GoogleCast", services, 0); err != nil {
 		return err
 	} else {
 		fmt.Println(client)
@@ -30,7 +30,7 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("clientpool")
+	config := gopi.NewAppConfig("googlecast:client")
 
 	// Run the command line tool
 	os.Exit(rpc.Client(config, time.Second, Main))

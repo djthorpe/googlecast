@@ -5,7 +5,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 // Service to enumerate Googlecasts
-service Googlecast {
+service GoogleCast {
   // Simple ping method to show server is "up"
   rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
