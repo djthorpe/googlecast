@@ -69,9 +69,14 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 		PrintDevices(os.Stdout, devices)
 		// Watch in background, wait for signal
 		ctx, cancel := context.WithCancel(context.Background())
-		go WatchEvents(ctx, client)
+		defer cancel()
+		go func() {
+			if err := WatchEvents(ctx, client); err != nil {
+				app.Logger.Warn("Error: %v", err)
+			}
+			app.SendSignal()
+		}()
 		app.WaitForSignal()
-		cancel()
 	}
 
 	// Success

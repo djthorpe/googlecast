@@ -35,6 +35,13 @@ type Client struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	HEARTBEAT_TIMEOUT = 5 * time.Second
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func NewGoogleCastClient(conn gopi.RPCClientConn) gopi.RPCClient {
@@ -94,13 +101,16 @@ func (this *Client) StreamEvents(ctx context.Context) error {
 	this.RPCClientConn.Lock()
 	defer this.RPCClientConn.Unlock()
 
-	stream, err := this.GoogleCastClient.StreamEvents(ctx, &empty.Empty{})
+	// Errors channel receives errors from recv
+	now := time.Now()
+	ctx_, cancel := context.WithCancel(ctx)
+	errors := make(chan error)
+
+	// Open stream
+	stream, err := this.GoogleCastClient.StreamEvents(ctx_, &empty.Empty{})
 	if err != nil {
 		return err
 	}
-
-	// Errors channel receives errors from recv
-	errors := make(chan error)
 
 	// Receive messages in the background
 	go func() {
@@ -112,16 +122,24 @@ func (this *Client) StreamEvents(ctx context.Context) error {
 				errors <- err
 				break FOR_LOOP
 			} else if evt := fromProtoEvent(evt_, this.RPCClientConn); evt != nil {
+				now = time.Now()
 				this.Emit(evt)
 			}
 		}
 		close(errors)
 	}()
 
-	// Continue until error or io.EOF is returned
+	// Continue until error or io.EOF is returned, or nothing received after timeout
+	heartbeat := time.NewTicker(HEARTBEAT_TIMEOUT)
+	defer heartbeat.Stop()
 	for {
 		select {
-		case <-ctx.Done():
+		case <-heartbeat.C:
+			if time.Since(now) > HEARTBEAT_TIMEOUT {
+				fmt.Println("TIMEOUT!")
+				cancel()
+			}
+		case <-ctx_.Done():
 			if err := <-errors; err == nil || grpc.IsErrCanceled(err) {
 				return nil
 			} else {
