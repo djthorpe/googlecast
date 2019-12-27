@@ -27,13 +27,15 @@ type (
 // CONSTANTS
 
 const (
-	CAST_EVENT_NONE    EventType = 0
-	CAST_EVENT_CONNECT EventType = iota
-	CAST_EVENT_DISCONNECT
-	CAST_EVENT_DEVICE
-	CAST_EVENT_VOLUME
-	CAST_EVENT_APPLICATION
-	CAST_EVENT_MEDIA
+	CAST_EVENT_NONE EventType = iota
+	CAST_EVENT_DEVICE_ADDED
+	CAST_EVENT_DEVICE_UPDATED
+	CAST_EVENT_DEVICE_DELETED
+	CAST_EVENT_CHANNEL_CONNECT
+	CAST_EVENT_CHANNEL_DISCONNECT
+	CAST_EVENT_VOLUME_UPDATED
+	CAST_EVENT_APPLICATION_UPDATED
+	CAST_EVENT_MEDIA_UPDATED
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +45,7 @@ type Cast interface {
 	gopi.Driver
 	gopi.Publisher
 
+	// Return list of discovered Google Chromecast Devices
 	Devices() []Device
 
 	// Connect to the control channel for a device, with timeout
@@ -63,19 +66,21 @@ type Channel interface {
 	RemoteAddr() string
 
 	// Get Properties
-	Applications() []Application
+	Application() Application
 	Volume() Volume
 	Media() Media
 
-	// Set Properties
-	SetApplication(Application) error // Application to watch or nil
-	SetPlay(bool) (int, error)        // Play or stop
-	SetPause(bool) (int, error)       // Pause or play
-	SetVolume(float32) (int, error)   // Set volume level
-	SetMuted(bool) (int, error)       // Set muted
-	//SetTrackNext() (int, error)
-	//SetTrackPrev() (int, error)
-	//StreamUrl(string)
+	/*
+		// Set Properties
+		SetApplication(Application) error // Application to watch or nil
+		SetPlay(bool) (int, error)        // Play or stop
+		SetPause(bool) (int, error)       // Pause or play
+		SetVolume(float32) (int, error)   // Set volume level
+		SetMuted(bool) (int, error)       // Set muted
+		//SetTrackNext() (int, error)
+		//SetTrackPrev() (int, error)
+		//StreamUrl(string)
+	*/
 }
 
 type Application interface {
@@ -124,18 +129,22 @@ func (t EventType) String() string {
 	switch t {
 	case CAST_EVENT_NONE:
 		return "CAST_EVENT_NONE"
-	case CAST_EVENT_CONNECT:
-		return "CAST_EVENT_CONNECT"
-	case CAST_EVENT_DISCONNECT:
-		return "CAST_EVENT_DISCONNECT"
-	case CAST_EVENT_DEVICE:
-		return "CAST_EVENT_DEVICE"
-	case CAST_EVENT_VOLUME:
-		return "CAST_EVENT_VOLUME"
-	case CAST_EVENT_APPLICATION:
-		return "CAST_EVENT_APPLICATION"
-	case CAST_EVENT_MEDIA:
-		return "CAST_EVENT_MEDIA"
+	case CAST_EVENT_DEVICE_ADDED:
+		return "CAST_EVENT_DEVICE_ADDED"
+	case CAST_EVENT_DEVICE_UPDATED:
+		return "CAST_EVENT_DEVICE_UPDATED"
+	case CAST_EVENT_DEVICE_DELETED:
+		return "CAST_EVENT_DEVICE_DELETED"
+	case CAST_EVENT_CHANNEL_CONNECT:
+		return "CAST_EVENT_CHANNEL_CONNECT"
+	case CAST_EVENT_CHANNEL_DISCONNECT:
+		return "CAST_EVENT_CHANNEL_DISCONNECT"
+	case CAST_EVENT_VOLUME_UPDATED:
+		return "CAST_EVENT_VOLUME_UPDATED"
+	case CAST_EVENT_APPLICATION_UPDATED:
+		return "CAST_EVENT_APPLICATION_UPDATED"
+	case CAST_EVENT_MEDIA_UPDATED:
+		return "CAST_EVENT_MEDIA_UPDATED"
 	default:
 		return "[?? Invalid GoogleCastEventType value]"
 	}

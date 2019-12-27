@@ -4,27 +4,16 @@ import (
 	"os"
 
 	// Frameworks
-	"github.com/djthorpe/gopi"
+	gopi "github.com/djthorpe/gopi"
+	rpc "github.com/djthorpe/gopi-rpc"
 )
-
-////////////////////////////////////////////////////////////////////////////////
-
-func Main(app *gopi.AppInstance, done chan<- struct{}) error {
-
-	app.Logger.Info("Waiting for CTRL+C")
-	app.WaitForSignal()
-	done <- gopi.DONE
-
-	// Success
-	return nil
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("googlecast", "discovery")
+	config := gopi.NewAppConfig("googlecast:service")
 
 	// Run the command line tool
-	os.Exit(gopi.CommandLineTool2(config, Main))
+	os.Exit(rpc.Server(config))
 }

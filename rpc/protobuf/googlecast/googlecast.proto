@@ -4,42 +4,46 @@ package gopi;
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
-// Service to enumerate Googlecasts
+// Service to enumerate and control Chromecasts
 service GoogleCast {
   // Simple ping method to show server is "up"
-  rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
 
   // Returns list of cast devices
-  rpc Devices (google.protobuf.Empty) returns (GoogleCastDeviceReply);
+  rpc Devices(google.protobuf.Empty) returns (DevicesReply);
 
-  // Stream events
-  rpc StreamEvents (google.protobuf.Empty) returns (stream GoogleCastEvent); 
+  // Stream Events
+  rpc StreamEvents(google.protobuf.Empty)  returns (stream CastEvent); 
 }
 
-// A google cast device
-message GoogleCastDevice {
-    string id = 1;
-    string name = 2;
-    string model = 3;
-    string service = 4;
-    uint32 state = 5;
+// Cast device
+message CastDevice {
+  string id = 1;
+  string name = 2;
+  string model = 3;
+  string service = 4;
+  uint32 state = 5;
 }
 
-message GoogleCastDeviceReply {
-    repeated GoogleCastDevice device = 1;
+// Cast event
+message CastEvent {
+  enum EventType {
+    NONE = 0;
+    DEVICE_ADDED = 1;
+    DEVICE_UPDATED = 2;
+    DEVICE_DELETED = 3;
+    CHANNEL_CONNECT = 4;
+    CHANNEL_DISCONNECT = 5;
+    VOLUME_UPDATED = 6;
+    APPLICATION_UPDATED = 7;
+    MEDIA_UPDATED = 8;
+  }
+  EventType type = 1;
+  CastDevice device = 2;
 }
 
-// Monitor changes
-message GoogleCastEvent {
-    // Event type
-    enum EventType {
-        EVENT_NONE = 0;
-        EVENT_ADD = 1;
-        EVENT_CHANGE = 2;
-        EVENT_EXPIRE = 3;
-    }
-    // Fields
-    EventType type = 1;
-    GoogleCastDevice device = 2;
-    google.protobuf.Timestamp ts = 3;
+message DevicesReply {
+  repeated CastDevice device = 1;
 }
+
+
