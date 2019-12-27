@@ -11,6 +11,7 @@ package googlecast
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	// Frameworks
@@ -33,10 +34,13 @@ type Service struct {
 }
 
 type service struct {
-	log  gopi.Logger
-	cast googlecast.Cast
+	log     gopi.Logger
+	cast    googlecast.Cast
+	channel map[string]googlecast.Channel
+
 	event.Tasks
 	event.Publisher
+	sync.Mutex
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,6 +57,7 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(service)
 	this.log = log
 	this.cast = config.Cast
+	this.channel = make(map[string]googlecast.Channel)
 
 	// Register service with GRPC server
 	pb.RegisterGoogleCastServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
@@ -71,6 +76,10 @@ func (this *service) Close() error {
 	if err := this.Tasks.Close(); err != nil {
 		return err
 	}
+
+	// Release resources
+	this.channel = nil
+	this.cast = nil
 
 	// Success
 	return nil
@@ -163,8 +172,12 @@ func (this *service) EventsTask(start chan<- event.Signal, stop <-chan event.Sig
 FOR_LOOP:
 	for {
 		select {
-		case event := <-evt:
-			fmt.Println(event)
+		case event_ := <-evt:
+			if event, ok := event_.(googlecast.Event); ok && event != nil {
+				if err := this.EventAction(event); err != nil {
+					this.log.Warn("EventAction: %v", err)
+				}
+			}
 		case <-stop:
 			this.cast.Unsubscribe(evt)
 			break FOR_LOOP
@@ -173,4 +186,61 @@ FOR_LOOP:
 
 	// Success
 	return nil
+}
+
+func (this *service) EventAction(event googlecast.Event) error {
+	// Case where event is nil (closed channel)
+	if event == nil {
+		return nil
+	}
+	// Case where event is device added or removed, connect to chromecast to
+	// control it
+	switch event.Type() {
+	case googlecast.CAST_EVENT_DEVICE_ADDED:
+		if channel, err := this.cast.Connect(event.Device(), gopi.RPC_FLAG_INET_V4|gopi.RPC_FLAG_INET_V6, 0); err != nil {
+			return err
+		} else if this.setChannelForDevice(event.Device(), channel) == false {
+			return gopi.ErrAppError
+		} else {
+			fmt.Println("CONNECT", channel)
+		}
+	case googlecast.CAST_EVENT_DEVICE_DELETED:
+		if channel := this.channelForDevice(event.Device()); channel != nil {
+			if err := this.cast.Disconnect(channel); err != nil {
+				return err
+			} else {
+				fmt.Println("DISCONNECT", channel)
+			}
+		}
+	}
+	// Success
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this *service) channelForDevice(device googlecast.Device) googlecast.Channel {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	if device == nil {
+		return nil
+	} else if channel, exists := this.channel[device.Id()]; exists {
+		return channel
+	} else {
+		return nil
+	}
+}
+
+func (this *service) setChannelForDevice(device googlecast.Device, channel googlecast.Channel) bool {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	if channel != nil || device != nil {
+		return false
+	} else if _, exists := this.channel[device.Id()]; exists {
+		return false
+	} else {
+		this.channel[device.Id()] = channel
+		return true
+	}
 }
