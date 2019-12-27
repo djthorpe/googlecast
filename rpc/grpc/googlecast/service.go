@@ -81,6 +81,12 @@ func (this *service) Close() error {
 
 func (this *service) CancelRequests() error {
 	this.log.Debug("<grpc.service.googlecast>CancelRequests{}")
+
+	// Put empty event onto the channel to indicate any on-going
+	// requests should be ended
+	this.Emit(event.NullEvent)
+
+	// Return success
 	return nil
 }
 
@@ -119,7 +125,7 @@ FOR_LOOP:
 				break FOR_LOOP
 			} else if evt_, ok := evt.(googlecast.Event); ok {
 				fmt.Println(evt_)
-				if err := stream.Send(&pb.CastEvent{}); err != nil {
+				if err := stream.Send(toProtoEvent(evt_)); err != nil {
 					this.log.Warn("StreamEvents: %v", err)
 					break FOR_LOOP
 				}

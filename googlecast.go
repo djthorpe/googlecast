@@ -9,6 +9,7 @@
 package googlecast
 
 import (
+	"context"
 	"time"
 
 	// Frameworks
@@ -118,7 +119,7 @@ type Client interface {
 	Devices() ([]Device, error)
 
 	// Stream discovery events
-	//StreamEvents(ctx context.Context) error
+	StreamEvents(ctx context.Context) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
