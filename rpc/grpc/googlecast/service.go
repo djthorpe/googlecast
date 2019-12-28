@@ -244,7 +244,6 @@ func (this *service) setChannelForDevice(device googlecast.Device, channel googl
 			delete(this.channel, device.Id())
 			return true
 		} else {
-			fmt.Println("Alredy set channel for device")
 			return false
 		}
 	} else {
