@@ -30,7 +30,6 @@ func init() {
 			}, app.Logger)
 		},
 	})
-
 	// Client
 	gopi.RegisterModule(gopi.Module{
 		Name:     "googlecast:client",

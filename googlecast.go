@@ -68,7 +68,7 @@ type Channel interface {
 	// Get Properties
 	Application() Application
 	Volume() Volume
-	Media() Media
+	Media() []Media
 
 	/*
 		// Set Properties

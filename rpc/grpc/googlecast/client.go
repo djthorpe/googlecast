@@ -112,7 +112,7 @@ func (this *Client) StreamEvents(ctx context.Context) error {
 		return err
 	}
 
-	// Receive messages in the background
+	// Receive messages in the background, close when done
 	go func() {
 	FOR_LOOP:
 		for {
@@ -136,11 +136,12 @@ func (this *Client) StreamEvents(ctx context.Context) error {
 		select {
 		case <-heartbeat.C:
 			if time.Since(now) > HEARTBEAT_TIMEOUT {
-				fmt.Println("TIMEOUT!")
+				// Haven't received a message for a while, so
+				// register quit with deadline exceeded
 				cancel()
 			}
 		case <-ctx_.Done():
-			if err := <-errors; err == nil || grpc.IsErrCanceled(err) {
+			if err := <-errors; err == nil {
 				return nil
 			} else {
 				return err

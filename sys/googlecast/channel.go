@@ -48,7 +48,7 @@ type castchannel struct {
 	// The current status of the device
 	app    *application
 	volume *volume
-	media  *media
+	media  []*media
 
 	sync.Mutex
 	event.Tasks
@@ -197,14 +197,26 @@ func (this *castchannel) Disconnect() error {
 	this.log.Debug2("<googlecast.Channel.Disconnect>{ remote_addr=%v }", strconv.Quote(this.RemoteAddr()))
 
 	// Send close message
-	payload := &PayloadHeader{Type: "CLOSE"}
-	reqid := this.nextMessageId()
-	if err := this.send(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_CONN, payload.WithId(reqid)); err != nil {
+	if reqid, err := this.DisconnectEx(); err != nil {
 		return err
 	} else {
 		this.Emit(&castevent{
 			googlecast.CAST_EVENT_CHANNEL_DISCONNECT, this, nil, this, reqid,
 		})
+	}
+
+	// Success
+	return nil
+}
+
+func (this *castchannel) DisconnectEx() (int, error) {
+	this.log.Debug2("<googlecast.Channel.DisconnectEx>{ remote_addr=%v }", strconv.Quote(this.RemoteAddr()))
+
+	// Send close message
+	payload := &PayloadHeader{Type: "CLOSE"}
+	reqid := this.nextMessageId()
+	if err := this.send(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_CONN, payload.WithId(reqid)); err != nil {
+		return 0, err
 	}
 
 	// Release resources
@@ -213,7 +225,7 @@ func (this *castchannel) Disconnect() error {
 	this.media = nil
 
 	// Success
-	return nil
+	return reqid, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -227,8 +239,12 @@ func (this *castchannel) Volume() googlecast.Volume {
 	return this.volume
 }
 
-func (this *castchannel) Media() googlecast.Media {
-	return this.media
+func (this *castchannel) Media() []googlecast.Media {
+	media := make([]googlecast.Media, len(this.Media()))
+	for i, m := range this.media {
+		media[i] = m
+	}
+	return media
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -417,6 +433,9 @@ func (this *castchannel) receive_message_receiver(message *pb.CastMessage) error
 	if err := json.Unmarshal([]byte(*message.PayloadUtf8), &header); err != nil {
 		return err
 	}
+
+	this.log.Debug2("receive_message_receiver: %v (from %v)", header.Type, this.RemoteAddr())
+
 	switch header.Type {
 	case "RECEIVER_STATUS":
 		if err := json.Unmarshal([]byte(message.GetPayloadUtf8()), &receiver_status); err != nil {
@@ -438,6 +457,9 @@ func (this *castchannel) receive_message_heartbeat(message *pb.CastMessage) erro
 	if err := json.Unmarshal([]byte(*message.PayloadUtf8), &header); err != nil {
 		return err
 	}
+
+	this.log.Debug2("receive_message_heartbeat: %v (from %v)", header.Type, this.RemoteAddr())
+
 	switch header.Type {
 	case "PING":
 		payload := &PayloadHeader{Type: "PONG", RequestId: -1}
@@ -457,6 +479,9 @@ func (this *castchannel) receive_message_connection(message *pb.CastMessage) err
 	if err := json.Unmarshal([]byte(*message.PayloadUtf8), &header); err != nil {
 		return err
 	}
+
+	this.log.Debug2("receive_message_connection: %v (from %v)", header.Type, this.RemoteAddr())
+
 	switch header.Type {
 	default:
 		return fmt.Errorf("Ignoring message %v in namespace %v", strconv.Quote(header.Type), strconv.Quote(message.GetNamespace()))
@@ -472,17 +497,17 @@ func (this *castchannel) receive_message_media(message *pb.CastMessage) error {
 	if err := json.Unmarshal([]byte(*message.PayloadUtf8), &header); err != nil {
 		return err
 	}
+
+	this.log.Debug2("receive_message_media: %v (from %v)", header.Type, this.RemoteAddr())
+
 	switch header.Type {
 	case "MEDIA_STATUS":
 		if err := json.Unmarshal([]byte(message.GetPayloadUtf8()), &media_status); err != nil {
 			return err
 		}
 		// Update media
-		for _, media := range media_status.Status {
-			this.set_media(header.RequestId, &media)
-		}
+		this.set_media(header.RequestId, media_status.Status)
 	default:
-		fmt.Println(message)
 		return fmt.Errorf("Ignoring message %v in namespace %v", strconv.Quote(header.Type), strconv.Quote(message.GetNamespace()))
 	}
 	// Return success
@@ -529,11 +554,17 @@ func (this *castchannel) set_volume(reqid int, value volume) {
 	}
 }
 
-func (this *castchannel) set_media(reqid int, value *media) {
+func (this *castchannel) set_media(reqid int, value []media) {
 	var set bool
-	if this.media != value || value.Equals(this.media) == false {
-		this.media = value
+	if value == nil && this.media != nil {
+		this.media = nil
 		set = true
+	} else {
+		this.media = make([]*media, len(value))
+		set = true
+		for i, m := range value {
+			this.media[i] = &m
+		}
 	}
 	if set {
 		this.Emit(&castevent{

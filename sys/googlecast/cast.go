@@ -85,9 +85,11 @@ func (this *cast) Close() error {
 	this.WaitGroup.Wait()
 
 	// Stop background tasks
+	this.log.Debug("-> Cast.Tasks.Close")
 	if err := this.Tasks.Close(); err != nil {
 		errs.Add(err)
 	}
+	this.log.Debug("<- Cast.Tasks.Close")
 
 	// Unsubscribe
 	this.Publisher.Close()
@@ -190,9 +192,9 @@ FOR_LOOP:
 
 func (this *cast) Watch(start chan<- event.Signal, stop <-chan event.Signal) error {
 	this.log.Debug("<googlecast.Watch> Started")
-	start <- gopi.DONE
 
 	events := this.discovery.Subscribe()
+	start <- gopi.DONE
 FOR_LOOP:
 	for {
 		select {
@@ -201,10 +203,10 @@ FOR_LOOP:
 				this.WatchEvent(evt_)
 			}
 		case <-stop:
+			this.discovery.Unsubscribe(events)
 			break FOR_LOOP
 		}
 	}
-	this.discovery.Unsubscribe(events)
 	this.log.Debug("<googlecast.Watch> Stopped")
 	return nil
 }

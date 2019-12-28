@@ -143,7 +143,9 @@ FOR_LOOP:
 			}
 		case <-ticker.C:
 			if err := stream.Send(&pb.CastEvent{}); err != nil {
-				this.log.Warn("StreamEvents: %v", err)
+				if grpc.IsErrUnavailable(err) == false {
+					this.log.Warn("StreamEvents: %v", err)
+				}
 				break FOR_LOOP
 			}
 		case <-cancel:
@@ -235,10 +237,16 @@ func (this *service) channelForDevice(device googlecast.Device) googlecast.Chann
 func (this *service) setChannelForDevice(device googlecast.Device, channel googlecast.Channel) bool {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
-	if channel != nil || device != nil {
+	if device == nil {
 		return false
 	} else if _, exists := this.channel[device.Id()]; exists {
-		return false
+		if channel == nil {
+			delete(this.channel, device.Id())
+			return true
+		} else {
+			fmt.Println("Alredy set channel for device")
+			return false
+		}
 	} else {
 		this.channel[device.Id()] = channel
 		return true
